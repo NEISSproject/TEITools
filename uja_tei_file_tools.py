@@ -1,5 +1,6 @@
-from tei_parser import uja_tei_file
+from tei_parser import uja_tei_file,reconstruct_text
 import os
+from os.path import join, basename
 import spacy
 import json
 import random
@@ -57,10 +58,30 @@ def build_ner_training_data(directory,outfile):
     with open(outfile,'w+') as g:
         json.dump(training_data,g)
 
-def test_load_json(filename):
+def build_data_for_prediction(directory,outdirectory,fname=None):
+    #  before first use download the spacy model by: python -m spacy download de_core_news_sm
+    nlp =spacy.load('de_core_news_sm')
+
+    if fname is not None:
+        filelist=[join(directory,fname)]
+    else:
+        filelist=os.listdir(directory)
+    for filename in filelist:
+        brief=uja_tei_file(join(directory,filename),nlp)
+        raw_ner_data=split_into_sentences(brief.build_tagged_text_line_list())
+        for i in range(len(raw_ner_data)):
+            for j in range(len(raw_ner_data[i])):
+                for tag in _ner_tag_list:
+                    if tag in raw_ner_data[i][j][1]:
+                        raw_ner_data[i][j][1]=tag
+        with open(join(outdirectory,filename+'.json'),'w+') as g:
+            json.dump(raw_ner_data,g)
+
+
+def count_tags_in_json(filename):
     with open(filename) as f:
         training_data=json.load(f)
-    print(len(training_data))
+    #print(len(training_data))
     tag_collect={}
     for i in range(len(training_data)):
           for j in range(len(training_data[i])):
@@ -68,7 +89,7 @@ def test_load_json(filename):
                   tag_collect[training_data[i][j][1]]+=1
               else:
                   tag_collect[training_data[i][j][1]]=1
-    print(tag_collect)
+    print({k: v for k, v in sorted(tag_collect.items(), key=lambda item: item[1])})
 
 def split_train_data_in_val_and_train_set(filename,trainfilename,valfilename,valrate=0.1):
     with open(filename) as f:
@@ -86,18 +107,30 @@ def split_train_data_in_val_and_train_set(filename,trainfilename,valfilename,val
     with open(trainfilename,'w+') as h:
         json.dump(train_list,h)
 
+def reconstruct_text_to_predicted_data(directory,outdirectory):
+    for filename in os.listdir(directory):
+        with open(join(directory,filename)) as f:
+            predicted_data=json.load(f)
+        with open(join(outdirectory,filename+'.txt'),'w+') as g:
+            g.write(reconstruct_text(predicted_data,False, True))
+
+def show_statistics_of_json_files(filelist):
+    for file in filelist:
+        print(file+':')
+        count_tags_in_json(file)
+
+
 
 
 
 if __name__ == '__main__':
     #build_ner_statistics('../data_040520/briefe')
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
-    #test_load_json('../data_040520/train_data.json')
-    #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json')
-    print('Alles:')
-    test_load_json('../data_040520/train_data.json')
-    print('Val:')
-    test_load_json('../data_040520/data_uja_ner_val.json')
-    print('Train:')
-    test_load_json('../data_040520/data_uja_ner_train.json')
+    #count_tags_in_json('../data_040520/train_data.json')
+    #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
+    #build_data_for_prediction('../data_040520/briefe','../data_040520/data_to_predict')
+    #reconstruct_text_to_predicted_data('../data_040520/predicted_data/','../data_040520/text_from_predicted_data/')
+
+    #count_tags_in_json('../data_040520/train_data.json')
+    show_statistics_of_json_files(['../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json'])
 
