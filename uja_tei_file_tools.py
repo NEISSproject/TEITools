@@ -119,6 +119,105 @@ def show_statistics_of_json_files(filelist):
         print(file+':')
         count_tags_in_json(file)
 
+def _map_to_type(c):
+    if c.isalpha():
+        if c.isupper():
+            return 'A'
+        else:
+            return 'a'
+    elif c.isnumeric():
+        return 'd'
+    else:
+        return c
+
+def build_tfaip_type_vocab_for_train_data(train_data_file,outfilename):
+    d={}
+    with open(train_data_file) as f:
+        train_data=json.load(f)
+        #print(train_data[0])
+        #print(train_data[1])
+        for train_line in train_data:
+            for word in train_line:
+                type="".join([_map_to_type(c) for c in word[0]])
+                if type not in d:
+                    d[type]=1
+                else:
+                    d[type]= 1 + d[type]
+
+
+    sorted_types = sorted(d.items(), key=lambda kv: -kv[1])
+    with open(outfilename, 'w+') as f:
+        for c, val in sorted_types:
+            f.write('{}\t{}\n'.format(c, val))
+
+def build_tfaip_ner_train_data(train_data_file,outfilename,build_vocab=False):
+    chars = {}
+    words = {}
+    with open(outfilename, "w+") as g:
+        with open(train_data_file) as f:
+            train_data=json.load(f)
+            #print(train_data[0])
+            #print(train_data[1])
+            for train_line in train_data:
+                for word in train_line:
+                    if word[0] not in words:
+                        words[word[0]]=1
+                    else:
+                        words[word[0]]=1+words[word[0]]
+                    for w in word[0]:
+                        if w not in chars:
+                            chars[w] = 1
+                        else:
+                            chars[w] = 1 + chars[w]
+                    g.write('{}\t{}\t{}\t{}\n'.format(word[0], word[1], 0,"".join([_map_to_type(c) for c in word[0]])))
+                # print("\n")
+                g.write('\n')
+    if build_vocab:
+        sorted_chars = sorted(chars.items(), key=lambda kv: -kv[1])
+        with open("../data_040520/chars.vocab.tsv", 'w+') as f:
+            for c, val in sorted_chars:
+                f.write('{}\t{}\n'.format(c, val))
+
+        sorted_words = sorted(words.items(), key=lambda kv: -kv[1])
+        with open("../data_040520/words.vocab.tsv", 'w+') as f:
+            for w, val in sorted_words:
+                f.write('{}\t{}\n'.format(w, val))
+
+def find_errors_in_predicted_data(predpath,origpath):
+    count_all=0
+    count_error=0
+    tagged_origs=0
+    tagged_preds=0
+    tagged_origs_error=0
+    tagged_preds_error=0
+    for filename in os.listdir(origpath):
+        if int(filename[:4])<223:
+            with open(origpath+'/'+filename) as f:
+                with open(predpath+'/pred_'+filename) as g:
+                    orig_data=json.load(f)
+                    pred_data=json.load(g)
+                    for i in range(len(orig_data)):
+                        for j in range(len(orig_data[i])):
+                            count_all+=1
+                            if orig_data[i][j][1]!='O':
+                                tagged_origs+=1
+                            if pred_data[i][j][1]!='O':
+                                tagged_preds+=1
+                            if orig_data[i][j][1]!=pred_data[i][j][1]:
+                                count_error+=1
+                                print('Fehler in ' + origpath+'/'+filename)
+                                print('Satz ' + str(i+1) + ' Wort ' + str(j+1) + ' ')
+                                print(orig_data[i][j][0] + ' ' + orig_data[i][j][1] + ' ' + pred_data[i][j][1])
+                                if orig_data[i][j][1]!='O':
+                                    tagged_origs_error+=1
+                                if pred_data[i][j][1]!='O':
+                                    tagged_preds_error+=1
+    print('Accuracy: ' + str(float((1-count_error/count_all)*100)) + '%')
+    print('Precision: ' + str(float((1-tagged_preds_error/tagged_preds)*100)) + '%')
+    print('Recall: ' + str(float((1-tagged_origs_error/tagged_origs)*100)) + '%')
+
+
+
 
 
 
@@ -129,8 +228,10 @@ if __name__ == '__main__':
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_data_for_prediction('../data_040520/briefe','../data_040520/data_to_predict')
-    #reconstruct_text_to_predicted_data('../data_040520/predicted_data/','../data_040520/text_from_predicted_data/')
-
+    #reconstruct_text_to_predicted_data('../data_040520/predicted_data2/','../data_040520/text_from_predicted_data2/')
+    #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
+    #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
+    find_errors_in_predicted_data('../data_040520/predicted_data2','../data_040520/data_to_predict')
     #count_tags_in_json('../data_040520/train_data.json')
-    show_statistics_of_json_files(['../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json'])
+    #show_statistics_of_json_files(['../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json'])
 
