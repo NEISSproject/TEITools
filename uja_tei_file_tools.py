@@ -58,7 +58,7 @@ def build_ner_training_data(directory,outfile):
     with open(outfile,'w+') as g:
         json.dump(training_data,g)
 
-def build_data_for_prediction(directory,outdirectory,fname=None):
+def build_ner_data_per_file(directory,outdirectory,fname=None):
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
 
@@ -222,16 +222,19 @@ def find_errors_in_predicted_data(predpath,origpath):
 
 
 
+
+
+
 if __name__ == '__main__':
     #build_ner_statistics('../data_040520/briefe')
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
-    #build_data_for_prediction('../data_040520/briefe','../data_040520/data_to_predict')
-    #reconstruct_text_to_predicted_data('../data_040520/predicted_data2/','../data_040520/text_from_predicted_data2/')
+    #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict')
+    #reconstruct_text_to_predicted_data('../data_040520/predicted_data4/','../data_040520/text_from_predicted_data4/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
-    find_errors_in_predicted_data('../data_040520/predicted_data2','../data_040520/data_to_predict')
+    find_errors_in_predicted_data('../data_040520/predicted_data5','../data_040520/data_to_predict')
     #count_tags_in_json('../data_040520/train_data.json')
     #show_statistics_of_json_files(['../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json'])
 

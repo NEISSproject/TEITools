@@ -122,7 +122,11 @@ class uja_tei_file():
                     else:
                         cur_tag=text_part[1:-1]
                 elif text_part is not None and text_part!='':
-                    cur_line_list.append([text_part,cur_tag])
+                    #Sentence extraction doesn't work for capitalized words, that is why we use the following
+                    if text_part.upper()==text_part:
+                        cur_line_list.append([text_part.lower(),cur_tag,1])
+                    else:
+                        cur_line_list.append([text_part,cur_tag,0])
             self._tagged_text_line_list.append(cur_line_list)
         #Seperate sentences with the help of spacy
         for i in range(len(self._tagged_text_line_list)):
@@ -132,7 +136,7 @@ class uja_tei_file():
                 if j>0:
                     cur_line_text+=' '
                 cur_line_text+=self._tagged_text_line_list[i][j][0]
-            #print(cur_line_text)
+            #print('cur line text: ',cur_line_text)
             tokens=self._nlp(cur_line_text)
             k=0
             new_line_list=[]
@@ -142,12 +146,15 @@ class uja_tei_file():
                 for wordindex in range(len(sent)):
                     cur_tag_element=self._tagged_text_line_list[i][k]
                     cur_word+=str(sent[wordindex])
+                    word_to_insert=str(sent[wordindex])
+                    if cur_tag_element[2]==1:
+                       word_to_insert=word_to_insert.upper()
                     if wordindex==0:
-                        new_line_list.append([str(sent[wordindex]),cur_tag_element[1],2])
+                        new_line_list.append([word_to_insert,cur_tag_element[1],2])
                     elif space_before:
-                        new_line_list.append([str(sent[wordindex]),cur_tag_element[1],0])
+                        new_line_list.append([word_to_insert,cur_tag_element[1],0])
                     else:
-                        new_line_list.append([str(sent[wordindex]),cur_tag_element[1],1])
+                        new_line_list.append([word_to_insert,cur_tag_element[1],1])
                     if cur_word==cur_tag_element[0]:
                         space_before=True
                         cur_word=""
@@ -163,6 +170,8 @@ class uja_tei_file():
         return self._text
     def get_tagged_text(self):
         return self._tagged_text
+    def get_tagged_text_line_list(self):
+        return self._tagged_text_line_list
     def get_statistics(self):
         return self._statistics
     def print_statistics(self):
@@ -187,13 +196,15 @@ def reconstruct_text(text_list,sentences_per_line=False,with_tags=False):
                 text+='#'+text_part[1]
         text+='\n'
     return text
+
+
 if __name__ == '__main__':
-    brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
-    #brief=uja_tei_file('../data_040520/briefe/0094_060083.xml')
+    #brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
+    brief=uja_tei_file('../data_040520/briefe/0094_060083.xml')
     print(brief.get_text())
     #print(reconstruct_text(brief.build_tagged_text_line_list(),True,False))
-
     #brief.print_statistics()
+
 
 
 
