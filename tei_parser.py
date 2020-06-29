@@ -1,13 +1,17 @@
 from bs4 import BeautifulSoup
 import re
 import spacy
+import json
 
 class uja_tei_file():
 
     def __init__(self, filename,nlp=None):
         self._allowed_tags={'rs':['person','city','ground','water','org'],'persName':[],'persname':[],'placeName':['city','ground','water'],'placename':['city','ground','water'],'orgName':[],'orgname':[],'date':[]}
+        self._pagelist=[]
+        self._soup=None
         self._text,self._tagged_text,self._statistics=self._get_text_and_statistics(filename)
         self._tagged_text_line_list=[]
+
         if nlp is not None:
             self._nlp=nlp
         else:
@@ -79,13 +83,15 @@ class uja_tei_file():
 
     def _get_text_and_statistics(self, filename):
         with open(filename, 'r') as tei:
-            soup = BeautifulSoup(tei, 'lxml')
-        textcontent=soup.find('text')
+            self._soup = BeautifulSoup(tei, 'lxml')
+
+        textcontent=self._soup.find('text')
         text_list=[]
         tagged_text_list=[]
         statistics={}
         pages = textcontent.find_all(['opener','p','closer'])
         for page in pages:
+            self._pagelist.append({'name':page.name,'page':page})
             if page.name=='closer':
                 text_list=text_list+[' <linebreak>\n']
                 tagged_text_list=tagged_text_list+[' <linebreak>\n']
@@ -178,6 +184,64 @@ class uja_tei_file():
         for key in self._statistics.keys():
             print(key,self._statistics[key])
 
+    def _write_content(self,content,predicted_data,contentindex,wordindex,already_tagged):
+        cur_content_index=0
+        for subcontent in content.contents:
+            if subcontent.name not in ['lb','pb'] and subcontent!='\n' and str(subcontent.__class__.__name__)!='Comment':
+                if subcontent.name=='app' and subcontent.lem is not None:
+                    contentindex,wordindex=self._write_content(subcontent.lem,predicted_data,contentindex,wordindex,already_tagged)
+                elif subcontent.name is not None and not (subcontent.name in self._allowed_tags.keys() and (len(self._allowed_tags[subcontent.name])==0
+                                                                                                              or ('subtype' in subcontent.attrs.keys() and subcontent.attrs['subtype'] in self._allowed_tags[subcontent.name]))):
+                    contentindex,wordindex=self._write_content(subcontent,predicted_data,contentindex,wordindex,True)
+                elif subcontent.name is None:
+                    if subcontent is not None and subcontent!="":
+                        for i in range(len(subcontent)):
+                            #if contentindex>=len(predicted_data)-1:
+                            #    print('Hallo')
+                            if contentindex<len(predicted_data) and len(self._cur_word)>len(predicted_data[contentindex][wordindex][0]):
+                                print("Error: Predicted data doesn't match TEI-File!")
+                                raise ValueError
+                            if subcontent[i]==self._cur_pred_word[self._cur_pred_index]:
+                                self._cur_pred_index+=1
+                                self._cur_word=self._cur_word+subcontent[i]
+                            elif i>0 and self._cur_pred_index>0:
+                                print("Error: Predicted data doesn't match TEI-File!")
+                                raise ValueError
+                            if self._cur_word==self._cur_pred_word:
+                                if len(predicted_data[contentindex])-1>wordindex:
+                                    wordindex+=1
+                                else:
+                                    wordindex=0
+                                    contentindex+=1
+                                self._cur_word=""
+                                if len(predicted_data)>contentindex:
+                                    self._cur_pred_word=predicted_data[contentindex][wordindex][0]
+                                self._cur_pred_index=0
+                        #print(subcontent)
+                else:
+                    contentindex,wordindex=self._write_content(subcontent,predicted_data,contentindex,wordindex,already_tagged)
+            cur_content_index+=1
+        return contentindex,wordindex
+
+
+    def write_predicted_ner_tags(self,predicted_data):
+        #print(len(predicted_data))
+        #for i in range(len(predicted_data)):
+        #    print(len(predicted_data[i]))
+        contentindex=0
+        wordindex=0
+        self._cur_word=""
+        self._cur_pred_word=predicted_data[0][0][0]
+        self._cur_pred_index=0
+        for page in self._pagelist:
+            #print(page)
+            contentindex,wordindex=self._write_content(page['page'],predicted_data,contentindex,wordindex,False)
+            #print(contentindex,wordindex)
+
+
+
+
+
 def reconstruct_text(text_list,sentences_per_line=False,with_tags=False):
     text=''
     for text_line in text_list:
@@ -197,13 +261,61 @@ def reconstruct_text(text_list,sentences_per_line=False,with_tags=False):
         text+='\n'
     return text
 
+def test_rewrite_pred_into_tei():
+    nlp =spacy.load('de_core_news_sm')
+    #pred_0084_060075.xml.json
+    brief=uja_tei_file('../data_040520/briefe/0178_060169.xml',nlp)
+    with open('../data_040520/predicted_data3/pred_0178_060169.xml.json') as f:
+        predicted_data=json.load(f)
+    print(reconstruct_text(predicted_data,True))
+    brief.write_predicted_ner_tags(predicted_data)
+    print(brief._soup.find('text'))
+
+def test_write():
+    nlp =spacy.load('de_core_news_sm')
+    #pred_0084_060075.xml.json
+    brief=uja_tei_file('../data_040520/briefe/0178_060169.xml',nlp)
+    for element in brief._soup.find('text').findChildren():
+        print(element.name,element.string)
+
+
+def test_write2():
+
+    soup = BeautifulSoup('<html><div>abcdef</div><body>Hallo Welt! <p>Hello, World!</p>  nochmal </body></html>','lxml')
+    print(soup.html.p)
+    for content in soup.html.findChildren():
+        print(content.name,content.string,content.contents)
+        if content.name=='p':
+            content.string='Hello '
+        elif content.name=='body':
+            begin=soup.new_string('Hallo ')
+            content.contents[1].replace_with(begin)
+            #content.contents[1]='Hallo'
+            org=soup.new_tag('orgname',type='real',checked=False)
+            org.string='Welt'
+            content.insert(2,org)
+            rest=soup.new_string('! ')
+            content.insert(3,rest)
+        #print(content)
+    org=soup.new_tag('orgname',type='real',checked=False)
+    org.string='World'
+    soup.html.p.insert(len(soup.html.p),org)
+    rest=soup.new_string('!')
+    soup.html.p.insert(len(soup.html.p),rest)
+    print(soup)
+    for content in soup.html.findChildren():
+        print(content.name,content.string,content.contents)
+
 
 if __name__ == '__main__':
     #brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
-    brief=uja_tei_file('../data_040520/briefe/0094_060083.xml')
-    print(brief.get_text())
+    #brief=uja_tei_file('../data_040520/briefe/0094_060083.xml')
+    #print(brief.get_text())
     #print(reconstruct_text(brief.build_tagged_text_line_list(),True,False))
     #brief.print_statistics()
+    #test_rewrite_pred_into_tei()
+    test_write2()
+
 
 
 

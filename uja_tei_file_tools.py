@@ -4,6 +4,7 @@ from os.path import join, basename
 import spacy
 import json
 import random
+from bs4 import BeautifulSoup
 
 _ner_tag_list=['date','pers','city','ground','water','org']
 
@@ -78,17 +79,18 @@ def build_ner_data_per_file(directory,outdirectory,fname=None):
             json.dump(raw_ner_data,g)
 
 
-def count_tags_in_json(filename):
-    with open(filename) as f:
-        training_data=json.load(f)
-    #print(len(training_data))
+def count_tags_in_json(filelist):
     tag_collect={}
-    for i in range(len(training_data)):
-          for j in range(len(training_data[i])):
-              if training_data[i][j][1] in tag_collect.keys():
-                  tag_collect[training_data[i][j][1]]+=1
-              else:
-                  tag_collect[training_data[i][j][1]]=1
+    for filename in filelist:
+        with open(filename) as f:
+            training_data=json.load(f)
+        #print(len(training_data))
+        for i in range(len(training_data)):
+            for j in range(len(training_data[i])):
+                if training_data[i][j][1] in tag_collect.keys():
+                    tag_collect[training_data[i][j][1]]+=1
+                else:
+                    tag_collect[training_data[i][j][1]]=1
     print({k: v for k, v in sorted(tag_collect.items(), key=lambda item: item[1])})
 
 def split_train_data_in_val_and_train_set(filename,trainfilename,valfilename,valrate=0.1):
@@ -117,7 +119,14 @@ def reconstruct_text_to_predicted_data(directory,outdirectory):
 def show_statistics_of_json_files(filelist):
     for file in filelist:
         print(file+':')
-        count_tags_in_json(file)
+        count_tags_in_json([file])
+
+def show_statistics_of_file_list(listfilename):
+    fnames = []
+    with open(listfilename, 'r') as f:
+        fnames.extend(f.read().splitlines())
+    print(listfilename+':')
+    count_tags_in_json(fnames)
 
 def _map_to_type(c):
     if c.isalpha():
@@ -190,10 +199,11 @@ def find_errors_in_predicted_data(predpath,origpath):
     tagged_preds=0
     tagged_origs_error=0
     tagged_preds_error=0
-    for filename in os.listdir(origpath):
-        if int(filename[:4])<223:
-            with open(origpath+'/'+filename) as f:
-                with open(predpath+'/pred_'+filename) as g:
+    for filename in os.listdir(predpath):
+        if int(filename[5:9])<223:
+            #print(filename)
+            with open(origpath+'/'+filename[5:]) as f:
+                with open(predpath+'/'+filename) as g:
                     orig_data=json.load(f)
                     pred_data=json.load(g)
                     for i in range(len(orig_data)):
@@ -217,13 +227,26 @@ def find_errors_in_predicted_data(predpath,origpath):
     print('Recall: ' + str(float((1-tagged_origs_error/tagged_origs)*100)) + '%')
 
 
+def write_predicted_text_list_back_to_TEI(directory,origdirectory,outdirectory):
+    nlp =spacy.load('de_core_news_sm')
+    for filename in os.listdir(directory):
+        with open(join(directory,filename)) as f:
+            predicted_data=json.load(f)
+        print(filename)
+        print(filename[5:-5])
+        brief=uja_tei_file(join(origdirectory,filename[5:-5]),nlp)
+        brief.write_predicted_ner_tags(predicted_data)
+        #--Rückschreiben
+        #with open(join(origdirectory,filename[5:-5]), 'r') as tei:
+        #    soup = BeautifulSoup(tei, 'lxml')
+        #xmltext=soup.find('text')
+        #print('orig',xmltext)
+        #xmltext.string='test'
+        #print('neu',xmltext)
+        #xmltext=soup.find('text')
+        #print('current' ,xmltext)
 
-
-
-
-
-
-
+        #break
 
 if __name__ == '__main__':
     #build_ner_statistics('../data_040520/briefe')
@@ -231,10 +254,12 @@ if __name__ == '__main__':
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict')
-    #reconstruct_text_to_predicted_data('../data_040520/predicted_data4/','../data_040520/text_from_predicted_data4/')
+    #reconstruct_text_to_predicted_data('../data_040520/predicted_data3tt/','../data_040520/text_from_predicted_data3tt/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
-    find_errors_in_predicted_data('../data_040520/predicted_data5','../data_040520/data_to_predict')
-    #count_tags_in_json('../data_040520/train_data.json')
-    #show_statistics_of_json_files(['../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json','../data_040520/data_uja_ner_train.json','../data_040520/data_uja_ner_val.json'])
+    #find_errors_in_predicted_data('../data_040520/predicted_data3','../data_040520/data_to_predict')
+    #show_statistics_of_json_files(['../data_040520/train_data.json'])
+    #show_statistics_of_file_list('train_ner_file.lst')
+    #show_statistics_of_file_list('val_ner_file.lst')
+    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','')
 
