@@ -1,4 +1,4 @@
-from tei_parser import uja_tei_file,reconstruct_text
+from tei_parser import uja_tei_file,reconstruct_text, uja_tei_text_parser
 import os
 from os.path import join, basename
 import spacy
@@ -228,25 +228,17 @@ def find_errors_in_predicted_data(predpath,origpath):
 
 
 def write_predicted_text_list_back_to_TEI(directory,origdirectory,outdirectory):
-    nlp =spacy.load('de_core_news_sm')
     for filename in os.listdir(directory):
         with open(join(directory,filename)) as f:
             predicted_data=json.load(f)
         print(filename)
         print(filename[5:-5])
-        brief=uja_tei_file(join(origdirectory,filename[5:-5]),nlp)
+        brief=uja_tei_text_parser(join(origdirectory,filename[5:-5]))
         brief.write_predicted_ner_tags(predicted_data)
-        #--Rückschreiben
-        #with open(join(origdirectory,filename[5:-5]), 'r') as tei:
-        #    soup = BeautifulSoup(tei, 'lxml')
-        #xmltext=soup.find('text')
-        #print('orig',xmltext)
-        #xmltext.string='test'
-        #print('neu',xmltext)
-        #xmltext=soup.find('text')
-        #print('current' ,xmltext)
+        brief.refresh_text_by_tree()
+        brief.write_back_to_file(join(outdirectory,filename[5:-5]))
 
-        #break
+
 
 if __name__ == '__main__':
     #build_ner_statistics('../data_040520/briefe')
@@ -254,12 +246,12 @@ if __name__ == '__main__':
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict')
-    #reconstruct_text_to_predicted_data('../data_040520/predicted_data3tt/','../data_040520/text_from_predicted_data3tt/')
+    #reconstruct_text_to_predicted_data('../data_040520/predicted_data3/','../data_040520/text_from_predicted_data3/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
     #find_errors_in_predicted_data('../data_040520/predicted_data3','../data_040520/data_to_predict')
     #show_statistics_of_json_files(['../data_040520/train_data.json'])
     #show_statistics_of_file_list('train_ner_file.lst')
     #show_statistics_of_file_list('val_ner_file.lst')
-    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','')
+    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','../data_040520/predicted_tei')
 
