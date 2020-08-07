@@ -632,13 +632,15 @@ def test_rewrite_pred_into_tei2():
 
 
 if __name__ == '__main__':
-    #brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
+    brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
     #brief=uja_tei_file('../data_040520/briefe/0188_060182.xml')
-    #print(brief.get_text())
+    print(brief.get_tagged_text())
+    print(brief.build_tagged_text_line_list())
+    print(brief.print_statistics())
 
     #print(reconstruct_text(brief.build_tagged_text_line_list(),True,False))
     #brief.print_statistics()
-    test_rewrite_pred_into_tei2()
+    #test_rewrite_pred_into_tei2()
     #test_write2()
 
 

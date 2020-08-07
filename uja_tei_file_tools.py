@@ -42,7 +42,7 @@ def split_into_sentences(tagged_text_line_list):
         sentence_list.append(cur_sentence)
     return sentence_list
 
-def build_ner_training_data(directory,outfile):
+def build_ner_training_data(directory,outfile,with_rs=False):
 
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
@@ -55,11 +55,14 @@ def build_ner_training_data(directory,outfile):
           for j in range(len(training_data[i])):
               for tag in _ner_tag_list:
                   if tag in training_data[i][j][1]:
-                      training_data[i][j][1]=tag
+                      if with_rs and training_data[i][j][1].startswith('re'):
+                          training_data[i][j][1]='rs'+tag
+                      else:
+                          training_data[i][j][1]=tag
     with open(outfile,'w+') as g:
         json.dump(training_data,g)
 
-def build_ner_data_per_file(directory,outdirectory,fname=None):
+def build_ner_data_per_file(directory,outdirectory,fname=None,with_rs=False,onlytraindata=False):
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
 
@@ -68,15 +71,19 @@ def build_ner_data_per_file(directory,outdirectory,fname=None):
     else:
         filelist=os.listdir(directory)
     for filename in filelist:
-        brief=uja_tei_file(join(directory,filename),nlp)
-        raw_ner_data=split_into_sentences(brief.build_tagged_text_line_list())
-        for i in range(len(raw_ner_data)):
-            for j in range(len(raw_ner_data[i])):
-                for tag in _ner_tag_list:
-                    if tag in raw_ner_data[i][j][1]:
-                        raw_ner_data[i][j][1]=tag
-        with open(join(outdirectory,filename+'.json'),'w+') as g:
-            json.dump(raw_ner_data,g)
+        if not onlytraindata or int(filename[:4])<223:
+            brief=uja_tei_file(join(directory,filename),nlp)
+            raw_ner_data=split_into_sentences(brief.build_tagged_text_line_list())
+            for i in range(len(raw_ner_data)):
+                for j in range(len(raw_ner_data[i])):
+                    for tag in _ner_tag_list:
+                        if tag in raw_ner_data[i][j][1]:
+                            if with_rs and raw_ner_data[i][j][1].startswith('rs'):
+                                raw_ner_data[i][j][1]='rs'+tag
+                            else:
+                                raw_ner_data[i][j][1]=tag
+            with open(join(outdirectory,filename+'.json'),'w+') as g:
+                json.dump(raw_ner_data,g)
 
 
 def count_tags_in_json(filelist):
@@ -115,6 +122,13 @@ def reconstruct_text_to_predicted_data(directory,outdirectory):
             predicted_data=json.load(f)
         with open(join(outdirectory,filename+'.txt'),'w+') as g:
             g.write(reconstruct_text(predicted_data,False, True))
+
+def show_statistics_of_directory(directory):
+    filelist=os.listdir(directory)
+    for i in range(len(filelist)):
+        filelist[i]=join(directory,filelist[i])
+    print(directory+':')
+    count_tags_in_json(filelist)
 
 def show_statistics_of_json_files(filelist):
     for file in filelist:
@@ -245,7 +259,7 @@ if __name__ == '__main__':
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
-    #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict')
+    #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_rs_train',with_rs=True,onlytraindata=True)
     #reconstruct_text_to_predicted_data('../data_040520/predicted_data3/','../data_040520/text_from_predicted_data3/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
@@ -253,5 +267,7 @@ if __name__ == '__main__':
     #show_statistics_of_json_files(['../data_040520/train_data.json'])
     #show_statistics_of_file_list('train_ner_file.lst')
     #show_statistics_of_file_list('val_ner_file.lst')
-    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','../data_040520/predicted_tei')
+    show_statistics_of_directory('../data_040520/data_to_rs_train')
+    #write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','../data_040520/predicted_tei')
+
 
