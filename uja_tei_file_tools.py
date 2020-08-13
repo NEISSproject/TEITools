@@ -62,7 +62,7 @@ def build_ner_training_data(directory,outfile,with_rs=False):
     with open(outfile,'w+') as g:
         json.dump(training_data,g)
 
-def build_ner_data_per_file(directory,outdirectory,fname=None,with_rs=False,onlytraindata=False):
+def build_ner_data_per_file(directory,outdirectory,fname=None,with_rs=False,onlytraindata=False,build_note_files=False):
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
 
@@ -84,6 +84,19 @@ def build_ner_data_per_file(directory,outdirectory,fname=None,with_rs=False,only
                                 raw_ner_data[i][j][1]=tag
             with open(join(outdirectory,filename+'.json'),'w+') as g:
                 json.dump(raw_ner_data,g)
+            if build_note_files:
+                raw_note_ner_data=split_into_sentences(brief.build_tagged_note_line_list())
+                for i in range(len(raw_note_ner_data)):
+                    for j in range(len(raw_note_ner_data[i])):
+                        for tag in _ner_tag_list:
+                            if tag in raw_note_ner_data[i][j][1]:
+                                if with_rs and raw_note_ner_data[i][j][1].startswith('rs'):
+                                    raw_note_ner_data[i][j][1]='rs'+tag
+                                else:
+                                    raw_note_ner_data[i][j][1]=tag
+                with open(join(outdirectory,filename+'_notes.json'),'w+') as h:
+                    json.dump(raw_note_ner_data,h)
+
 
 
 def count_tags_in_json(filelist):
@@ -259,7 +272,7 @@ if __name__ == '__main__':
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
-    #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_rs_train',with_rs=True,onlytraindata=True)
+    build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict_with_notes',with_rs=False,onlytraindata=False,build_note_files=True)
     #reconstruct_text_to_predicted_data('../data_040520/predicted_data3/','../data_040520/text_from_predicted_data3/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
@@ -267,7 +280,7 @@ if __name__ == '__main__':
     #show_statistics_of_json_files(['../data_040520/train_data.json'])
     #show_statistics_of_file_list('train_ner_file.lst')
     #show_statistics_of_file_list('val_ner_file.lst')
-    show_statistics_of_directory('../data_040520/data_to_rs_train')
+    #show_statistics_of_directory('../data_040520/data_to_rs_train')
     #write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','../data_040520/predicted_tei')
 
 
