@@ -166,43 +166,74 @@ class uja_tei_text_parser():
         #print('neu',merged_tags)
         return merged_tags
 
-    def _write_textstring(self,textstring,predicted_data,already_tagged):
+    def _write_textstring(self,textstring,predicted_data,already_tagged,predicted_note_data,is_note):
         if textstring is not None and textstring!="":
             ins_tag=[]
             ignore_char_until=0
             for i in range(len(textstring)):
                 if i<ignore_char_until:
                     continue
-                if self._contentindex<len(predicted_data) and len(self._cur_word)>len(predicted_data[self._contentindex][self._wordindex][0]):
-                    print("Error: Predicted data doesn't match TEI-File!")
-                    raise ValueError
-                if textstring[i]==self._cur_pred_word[self._cur_pred_index]:
-                    self._cur_pred_index+=1
-                    self._cur_word=self._cur_word+textstring[i]
-                elif textstring[i]=='&': #Special handling for html unicode characters
-                    unicode_end_index=textstring[i:].find(';')
-                    ignore_char_until=i+unicode_end_index+1
-                    if textstring[i:ignore_char_until] not in self._space_codes:
-                        self._cur_pred_index+=1
-                        self._cur_word=self._cur_word+self._cur_pred_word[len(self._cur_word)]
+                if is_note:
+                    if self._notecontentindex<len(predicted_note_data) and len(self._cur_note_word)>len(predicted_note_data[self._notecontentindex][self._notewordindex][0]):
+                        print("Error: Predicted note data doesn't match TEI-File!")
+                        raise ValueError
+                    if textstring[i]=='&': #Special handling for html unicode characters
+                        unicode_end_index=textstring[i:].find(';')
+                        ignore_char_until=i+unicode_end_index+1
+                        if textstring[i:ignore_char_until] not in self._space_codes:
+                            self._cur_pred_note_index+=1
+                            self._cur_note_word=self._cur_note_word+self._cur_pred_note_word[len(self._cur_note_word)]
+                    elif textstring[i]==self._cur_pred_note_word[self._cur_pred_note_index]:
+                        self._cur_pred_note_index+=1
+                        self._cur_note_word=self._cur_note_word+textstring[i]
+                    elif i>0 and self._cur_pred_note_index>0:
+                        print("Error: Predicted note data doesn't match TEI-File!")
+                        raise ValueError
+                    if self._cur_note_word==self._cur_pred_note_word:
+                        if already_tagged==False and predicted_note_data[self._notecontentindex][self._notewordindex][1]!='O':
+                            ins_tag.append({'tag':predicted_note_data[self._notecontentindex][self._notewordindex][1],'begin':i-len(self._cur_pred_note_word)+1,'end':i+1})
+                        if len(predicted_note_data[self._notecontentindex])-1>self._notewordindex:
+                            self._notewordindex+=1
+                        else:
+                            self._notewordindex=0
+                            self._notecontentindex+=1
+                            #print(self._notecontentindex)
+                        self._cur_note_word=""
+                        if len(predicted_note_data)>self._notecontentindex:
+                            self._cur_pred_note_word=predicted_note_data[self._notecontentindex][self._notewordindex][0]
+                            #print(self._cur_pred_note_word)
+                        self._cur_pred_note_index=0
+                else:
+                    if self._contentindex<len(predicted_data) and len(self._cur_word)>len(predicted_data[self._contentindex][self._wordindex][0]):
+                        print("Error: Predicted data doesn't match TEI-File!")
+                        raise ValueError
 
-                elif i>0 and self._cur_pred_index>0:
-                    print("Error: Predicted data doesn't match TEI-File!")
-                    raise ValueError
-                if self._cur_word==self._cur_pred_word:
-                    if already_tagged==False and predicted_data[self._contentindex][self._wordindex][1]!='O':
-                        ins_tag.append({'tag':predicted_data[self._contentindex][self._wordindex][1],'begin':i-len(self._cur_pred_word)+1,'end':i+1})
-                    if len(predicted_data[self._contentindex])-1>self._wordindex:
-                        self._wordindex+=1
-                    else:
-                        self._wordindex=0
-                        self._contentindex+=1
-                        #print(self._contentindex)
-                    self._cur_word=""
-                    if len(predicted_data)>self._contentindex:
-                        self._cur_pred_word=predicted_data[self._contentindex][self._wordindex][0]
-                        #print(self._cur_pred_word)
-                    self._cur_pred_index=0
+                    if textstring[i]=='&': #Special handling for html unicode characters
+                        unicode_end_index=textstring[i:].find(';')
+                        ignore_char_until=i+unicode_end_index+1
+                        if textstring[i:ignore_char_until] not in self._space_codes:
+                            self._cur_pred_index+=1
+                            self._cur_word=self._cur_word+self._cur_pred_word[len(self._cur_word)]
+                    elif textstring[i]==self._cur_pred_word[self._cur_pred_index]:
+                        self._cur_pred_index+=1
+                        self._cur_word=self._cur_word+textstring[i]
+                    elif i>0 and self._cur_pred_index>0:
+                        print("Error: Predicted data doesn't match TEI-File!")
+                        raise ValueError
+                    if self._cur_word==self._cur_pred_word:
+                        if already_tagged==False and predicted_data[self._contentindex][self._wordindex][1]!='O':
+                            ins_tag.append({'tag':predicted_data[self._contentindex][self._wordindex][1],'begin':i-len(self._cur_pred_word)+1,'end':i+1})
+                        if len(predicted_data[self._contentindex])-1>self._wordindex:
+                            self._wordindex+=1
+                        else:
+                            self._wordindex=0
+                            self._contentindex+=1
+                            #print(self._contentindex)
+                        self._cur_word=""
+                        if len(predicted_data)>self._contentindex:
+                            self._cur_pred_word=predicted_data[self._contentindex][self._wordindex][0]
+                            #print(self._cur_pred_word)
+                        self._cur_pred_index=0
             #print(subcontent)
         if len(ins_tag)>0:
             #print(content.contents)
@@ -229,17 +260,31 @@ class uja_tei_text_parser():
                 addindex=addindex+len(new_tagged_string)-len(string_to_tag)
         return textstring
 
-    def _write_tag_dict(self,tag_dict,predicted_data,already_tagged):
-        if tag_dict['name'] in ['note','rdg']:
+    def _write_only_notes_in_contentlist(self,contentlist,predicted_data,already_tagged,with_notes,predicted_note_data,is_note):
+        for contentindex in range(len(contentlist)):
+            if isinstance(contentlist[contentindex],list):
+                contentlist[contentindex]=self._write_only_notes_in_contentlist(contentlist[contentindex],predicted_data,already_tagged,with_notes,predicted_note_data,is_note)
+            elif isinstance(contentlist[contentindex],dict):
+                if contentlist[contentindex]['name']=='note' and 'tagcontent' in contentlist[contentindex].keys():
+                    contentlist[contentindex]=self._write_tag_dict(contentlist[contentindex],predicted_data,already_tagged,with_notes,predicted_note_data,True)
+        return contentlist
+
+
+    def _write_tag_dict(self,tag_dict,predicted_data,already_tagged,with_notes,predicted_note_data,is_note):
+        if tag_dict['name']=='note' and with_notes:
+            is_note=True
+        if tag_dict['name'] =='rdg' or (with_notes==False and tag_dict['name']=='note'):
             return tag_dict
         elif tag_dict['name']=='app':
             if 'tagcontent' in tag_dict.keys() and isinstance(tag_dict['tagcontent'],list):
                 if len(tag_dict['tagcontent'])>0:
                     if isinstance(tag_dict['tagcontent'][0],dict):
-                        if tag_dict['tagcontent'][0]['name']=='lem' and 'tagcontent' in tag_dict['tagcontent'][0].keys():
-                            tag_dict['tagcontent'][0]=self._write_tag_dict(tag_dict['tagcontent'][0],predicted_data,already_tagged)
+                        if tag_dict['tagcontent'][0]['name'] in ['lem','note'] and 'tagcontent' in tag_dict['tagcontent'][0].keys():
+                            tag_dict['tagcontent'][0]=self._write_tag_dict(tag_dict['tagcontent'][0],predicted_data,already_tagged,with_notes,predicted_note_data,is_note)
+                if with_notes:
+                    tag_dict['tagcontent']=self._write_only_notes_in_contentlist(tag_dict['tagcontent'],predicted_data,already_tagged,with_notes,predicted_note_data,is_note)
             elif isinstance(tag_dict['tagcontent'],str):
-                tag_dict['tagcontent']=self._write_textstring(tag_dict['tagcontent'],predicted_data,already_tagged)
+                tag_dict['tagcontent']=self._write_textstring(tag_dict['tagcontent'],predicted_data,already_tagged,predicted_note_data,is_note)
         else:
             if tag_dict['name'] in self._allowed_tags.keys() and (len(self._allowed_tags[tag_dict['name']])==0 or self._has_subtype(tag_dict['name'],tag_dict['tagbegin'])):
                 tagged=True
@@ -247,34 +292,46 @@ class uja_tei_text_parser():
                 tagged=already_tagged
             if 'tagcontent' in tag_dict.keys():
                 if isinstance(tag_dict['tagcontent'],list):
-                    tag_dict['tagcontent']=self._write_contentlist(tag_dict['tagcontent'],predicted_data,tagged)
+                    tag_dict['tagcontent']=self._write_contentlist(tag_dict['tagcontent'],predicted_data,tagged,with_notes,predicted_note_data,is_note)
                 elif isinstance(tag_dict['tagcontent'],dict):
-                    tag_dict['tagcontent']=self._write_tag_dict(tag_dict['tagcontent'],predicted_data,tagged)
+                    tag_dict['tagcontent']=self._write_tag_dict(tag_dict['tagcontent'],predicted_data,tagged,with_notes,predicted_note_data,is_note)
                 elif isinstance(tag_dict['tagcontent'],str):
-                    tag_dict['tagcontent']=self._write_textstring(tag_dict['tagcontent'],predicted_data,tagged)
+                    tag_dict['tagcontent']=self._write_textstring(tag_dict['tagcontent'],predicted_data,tagged,predicted_note_data,is_note)
         return tag_dict
 
-    def _write_contentlist(self,contentlist,predicted_data,already_tagged):
+    def _write_contentlist(self,contentlist,predicted_data,already_tagged,with_notes,predicted_note_data,is_note):
         for contentindex in range(len(contentlist)):
             if isinstance(contentlist[contentindex],list):
-                contentlist[contentindex]=self._write_contentlist(contentlist[contentindex],predicted_data,already_tagged)
+                contentlist[contentindex]=self._write_contentlist(contentlist[contentindex],predicted_data,already_tagged,with_notes,predicted_note_data,is_note)
             elif isinstance(contentlist[contentindex],dict):
-                contentlist[contentindex]=self._write_tag_dict(contentlist[contentindex],predicted_data,already_tagged)
+                contentlist[contentindex]=self._write_tag_dict(contentlist[contentindex],predicted_data,already_tagged,with_notes,predicted_note_data,is_note)
             elif isinstance(contentlist[contentindex],str):
-                contentlist[contentindex]=self._write_textstring(contentlist[contentindex],predicted_data,already_tagged)
+                contentlist[contentindex]=self._write_textstring(contentlist[contentindex],predicted_data,already_tagged,predicted_note_data,is_note)
         return contentlist
 
 
-    def write_predicted_ner_tags(self,predicted_data):
+    def write_predicted_ner_tags(self,predicted_data,with_notes,predicted_note_data):
         self._contentindex=0
+        self._notecontentindex=0
         self._wordindex=0
+        self._notewordindex=0
         self._cur_word=""
+        self._cur_note_word=""
         self._cur_pred_word=predicted_data[0][0][0]
+        if with_notes and len(predicted_note_data)>0:
+            self._cur_pred_note_word=predicted_note_data[0][0][0]
+        else:
+            self._cur_pred_note_word=''
         self._cur_pred_index=0
-        self._write_contentlist(self._text_tree,predicted_data,False)
+        self._cur_pred_note_index=0
+        self._write_contentlist(self._text_tree,predicted_data,False,with_notes,predicted_note_data,False)
         if len(predicted_data)>self._contentindex:
             print('Error: Predicted Data does not match the text of the xml file')
             raise ValueError
+        if with_notes:
+            if len(predicted_note_data)>self._notecontentindex:
+                print('Error: Predicted Note Data does not match the text of the notes of the xml file')
+                raise ValueError
 
 
 
@@ -324,27 +381,29 @@ class uja_tei_file():
         return firststatistics
 
 
-    def _get_text_from_contentlist(self,contentlist):
+    def _get_text_from_contentlist(self,contentlist,is_already_note):
         text_list=[]
         tagged_text_list=[]
         statistics={}
 
         for pagecontent in contentlist:
-            if pagecontent.name not in ['lb','pb','note','rdg'] and pagecontent!='\n' and str(pagecontent.__class__.__name__)!='Comment':
-                if pagecontent.name=='app' and pagecontent.lem is not None:
-                    text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(pagecontent.lem.contents)
-                    text_list=text_list+text_list_to_add
-                    tagged_text_list=tagged_text_list+tagged_text_list_to_add
-                    statistics=self._merge_statistics(statistics,statistics_to_add)
-                    if pagecontent.note is not None:
-                        note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(pagecontent.note.contents)
-                        #print(note_list_to_add,tagged_note_list_to_add,note_statistics_to_add)
-                        self._note_list=self._note_list+note_list_to_add
-                        self._tagged_note_list=self._tagged_note_list+tagged_note_list_to_add
-                        self._note_statistics=self._merge_statistics(self._note_statistics,note_statistics_to_add)
+            if (pagecontent.name not in ['lb','pb','note','rdg'] or (pagecontent.name=='note' and is_already_note)) and pagecontent!='\n' and str(pagecontent.__class__.__name__)!='Comment':
+                if pagecontent.name=='app' and pagecontent.lem is not None and not is_already_note:
+                    for child in pagecontent.children:
+                        if child.name=='lem':
+                            text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(child.contents,is_already_note)
+                            text_list=text_list+text_list_to_add
+                            tagged_text_list=tagged_text_list+tagged_text_list_to_add
+                            statistics=self._merge_statistics(statistics,statistics_to_add)
+                        elif child.name=='note':
+                            note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(child.contents,True)
+                            #print(note_list_to_add,tagged_note_list_to_add,note_statistics_to_add)
+                            self._note_list=self._note_list+note_list_to_add
+                            self._tagged_note_list=self._tagged_note_list+tagged_note_list_to_add
+                            self._note_statistics=self._merge_statistics(self._note_statistics,note_statistics_to_add)
                 elif pagecontent.name is not None and not (pagecontent.name in self._allowed_tags.keys() and (len(self._allowed_tags[pagecontent.name])==0
                                                                                                               or ('subtype' in pagecontent.attrs.keys() and pagecontent.attrs['subtype'] in self._allowed_tags[pagecontent.name]))):
-                    text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(pagecontent.contents)
+                    text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(pagecontent.contents,is_already_note)
                     text_list=text_list+text_list_to_add
                     tagged_text_list=tagged_text_list+tagged_text_list_to_add
                     statistics=self._merge_statistics(statistics,statistics_to_add)
@@ -355,14 +414,14 @@ class uja_tei_file():
                     text_list.append(pagecontent)
                     tagged_text_list.append(pagecontent)
                 else:
-                    text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(pagecontent.contents)
+                    text_list_to_add,tagged_text_list_to_add,statistics_to_add=self._get_text_from_contentlist(pagecontent.contents,is_already_note)
                     text_list=text_list+text_list_to_add
                     statistics,tagname=self._add_content_to_statistics(pagecontent,statistics,text_list_to_add)
                     tagged_text_list=tagged_text_list+[' <'+tagname+'> ']+tagged_text_list_to_add+[' </'+tagname+'> ']
                     statistics=self._merge_statistics(statistics,statistics_to_add)
                         #text_list.append(pagecontent.text+' ')
             elif pagecontent.name=='note':
-                note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(pagecontent.contents)
+                note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(pagecontent.contents,True)
                 #print(note_list_to_add,tagged_note_list_to_add,note_statistics_to_add)
                 self._note_list=self._note_list+note_list_to_add
                 self._tagged_note_list=self._tagged_note_list+tagged_note_list_to_add
@@ -396,15 +455,15 @@ class uja_tei_file():
                     text_list=text_list+[' <linebreak>\n']
                     tagged_text_list=tagged_text_list+[' <linebreak>\n']
                 if page.name=='app' and page.lem is not None:
-                    new_text_list,new_tagged_text_list,new_statistics=self._get_text_from_contentlist(page.lem.contents)
+                    new_text_list,new_tagged_text_list,new_statistics=self._get_text_from_contentlist(page.lem.contents,False)
                     if page.note is not None:
-                        note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(page.note.contents)
+                        note_list_to_add,tagged_note_list_to_add,note_statistics_to_add=self._get_text_from_contentlist(page.note.contents,True)
                         #print(note_list_to_add,tagged_note_list_to_add,note_statistics_to_add)
                         self._note_list=self._note_list+note_list_to_add
                         self._tagged_note_list=self._tagged_note_list+tagged_note_list_to_add
                         self._note_statistics=self._merge_statistics(self._note_statistics,note_statistics_to_add)
                 else:
-                    new_text_list,new_tagged_text_list,new_statistics=self._get_text_from_contentlist(page.contents)
+                    new_text_list,new_tagged_text_list,new_statistics=self._get_text_from_contentlist(page.contents,False)
                 text_list=text_list+new_text_list
                 tagged_text_list=tagged_text_list+new_tagged_text_list
                 statistics=self._merge_statistics(statistics,new_statistics)
@@ -738,9 +797,9 @@ def test_rewrite_pred_into_tei2():
 
 
 if __name__ == '__main__':
-    brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
-    #brief=uja_tei_file('../data_040520/briefe/0188_060182.xml')
-    #print(brief.get_notes())
+    #brief=uja_tei_file('../data_040520/briefe/0003_060000.xml')
+    brief=uja_tei_file('../data_040520/briefe/0119_060109.xml')
+    print(brief.get_notes())
     #print(brief.get_tagged_notes())
     #print(brief._note_statistics)
     #print(brief.build_tagged_text_line_list())

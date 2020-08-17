@@ -254,16 +254,22 @@ def find_errors_in_predicted_data(predpath,origpath):
     print('Recall: ' + str(float((1-tagged_origs_error/tagged_origs)*100)) + '%')
 
 
-def write_predicted_text_list_back_to_TEI(directory,origdirectory,outdirectory):
+def write_predicted_text_list_back_to_TEI(directory,origdirectory,outdirectory,with_notes=False):
     for filename in os.listdir(directory):
-        with open(join(directory,filename)) as f:
-            predicted_data=json.load(f)
-        print(filename)
-        print(filename[5:-5])
-        brief=uja_tei_text_parser(join(origdirectory,filename[5:-5]))
-        brief.write_predicted_ner_tags(predicted_data)
-        brief.refresh_text_by_tree()
-        brief.write_back_to_file(join(outdirectory,filename[5:-5]))
+        if not filename.endswith('_notes.json'):#  and '0119_060109.xml' in filename: #and '0048_060046.xml' not in filename:
+            with open(join(directory,filename)) as f:
+                predicted_data=json.load(f)
+            if with_notes:
+                with open(join(directory,filename[:-5]+'_notes.json')) as g:
+                    predicted_note_data=json.load(g)
+            else:
+                predicted_note_data=[]
+            print(filename)
+            print(filename[5:-5])
+            brief=uja_tei_text_parser(join(origdirectory,filename[5:-5]))
+            brief.write_predicted_ner_tags(predicted_data,with_notes,predicted_note_data)
+            brief.refresh_text_by_tree()
+            brief.write_back_to_file(join(outdirectory,filename[5:-5]))
 
 
 
@@ -272,7 +278,7 @@ if __name__ == '__main__':
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
-    build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict_with_notes',with_rs=False,onlytraindata=False,build_note_files=True)
+    #build_ner_data_per_file('../data_040520/briefe','../data_040520/data_to_predict_with_notes',with_rs=False,onlytraindata=False,build_note_files=True)
     #reconstruct_text_to_predicted_data('../data_040520/predicted_data3/','../data_040520/text_from_predicted_data3/')
     #build_tfaip_type_vocab_for_train_data('../data_040520/train_data.json','../data_040520/types.vocab.tsv')
     #build_tfaip_ner_train_data('../data_040520/data_uja_ner_val2.json','../data_040520/tf_aip_uja_ner_val.txt',False)
@@ -281,6 +287,6 @@ if __name__ == '__main__':
     #show_statistics_of_file_list('train_ner_file.lst')
     #show_statistics_of_file_list('val_ner_file.lst')
     #show_statistics_of_directory('../data_040520/data_to_rs_train')
-    #write_predicted_text_list_back_to_TEI('../data_040520/predicted_data3','../data_040520/briefe','../data_040520/predicted_tei')
+    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data_with_notes','../data_040520/briefe','../data_040520/predicted_tei_with_notes',with_notes=True)
 
 
