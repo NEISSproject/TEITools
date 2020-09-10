@@ -289,4 +289,3 @@ if __name__ == '__main__':
     #show_statistics_of_directory('../data_040520/data_to_rs_train')
     write_predicted_text_list_back_to_TEI('../data_040520/predicted_data_with_notes','../data_040520/briefe','../data_040520/predicted_tei_with_notes',with_notes=True)
 
-
