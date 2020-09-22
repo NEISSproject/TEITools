@@ -42,6 +42,6 @@ class uja_tei_extractor():
 
 if __name__ == '__main__':
     brief=uja_tei_extractor('../data_040520/briefe/0119_060109.xml')
-    #brief.get_person_list_from_text(with_rs_tags=True,only_from_text=True,showPrint=True)
+    brief.get_person_list_from_text(with_rs_tags=True,only_from_text=True,showPrint=True)
     #brief.get_listPerson(showPrint=True)
-    brief.get_dnb_pers_refs(showPrint=True)
+    #brief.get_dnb_pers_refs(showPrint=True)
