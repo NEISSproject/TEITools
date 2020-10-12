@@ -5,7 +5,7 @@ import spacy
 class sturm_tei_file():
 
     def __init__(self, filename,nlp=None):
-        self._allowed_tags={'rs':['person','city','ground','water','org'],'persName':[],'persname':[],'placeName':[],'placename':[],'orgName':[],'orgname':[],'date':[]}
+        self._allowed_tags={'persName':[],'persname':[],'placeName':[],'placename':[],'date':[]}
         self._pagelist=[]
         self._soup=None
         self._note_list=[]

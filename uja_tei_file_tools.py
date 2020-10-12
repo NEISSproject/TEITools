@@ -274,7 +274,7 @@ def write_predicted_text_list_back_to_TEI(directory,origdirectory,outdirectory,w
 
 
 if __name__ == '__main__':
-    #build_ner_statistics('../data_040520/briefe')
+    build_ner_statistics('../data_040520/briefe')
     #build_ner_training_data('../data_040520/briefe','../data_040520/train_data.json')
     #count_tags_in_json('../data_040520/train_data.json')
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
@@ -287,5 +287,5 @@ if __name__ == '__main__':
     #show_statistics_of_file_list('train_ner_file.lst')
     #show_statistics_of_file_list('val_ner_file.lst')
     #show_statistics_of_directory('../data_040520/data_to_rs_train')
-    write_predicted_text_list_back_to_TEI('../data_040520/predicted_data_with_notes','../data_040520/briefe','../data_040520/predicted_tei_with_notes',with_notes=True)
+    #write_predicted_text_list_back_to_TEI('../data_040520/predicted_data_with_notes','../data_040520/briefe','../data_040520/predicted_tei_with_notes',with_notes=True)
 
