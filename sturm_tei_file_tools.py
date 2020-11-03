@@ -94,9 +94,19 @@ def count_tags_in_json(filelist):
                     tag_collect[training_data[i][j][1]]=1
     print({k: v for k, v in sorted(tag_collect.items(), key=lambda item: item[1])})
 
+def count_tags_in_list_file(listfile):
+    fnames = []
+    with open(listfile, 'r') as f:
+        fnames.extend(f.read().splitlines())
+    #print(fnames)
+    count_tags_in_json(fnames)
+
 if __name__ == '__main__':
     #build_ner_statistics('../data_sturm/briefe')
     #build_ner_training_data('../data_sturm/briefe','../data_sturm/train_data.json')
-    count_tags_in_json(['../data_sturm/train_data.json'])
+    #count_tags_in_json(['../data_sturm/train_data.json'])
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../data_sturm/briefe','../data_sturm/data_to_train')
+    count_tags_in_list_file("sturm.lst")
+    count_tags_in_list_file("train_sturm.lst")
+    count_tags_in_list_file("val_sturm.lst")
