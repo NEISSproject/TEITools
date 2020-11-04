@@ -41,26 +41,32 @@ def split_into_sentences(tagged_text_line_list):
         sentence_list.append(cur_sentence)
     return sentence_list
 
-def build_ner_training_data(directory,outfile,with_rs=False):
+def build_ner_training_data(directory,outfile,with_rs=False, with_position_tags=False):
 
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
     training_data=[]
     for filename in os.listdir(directory):
-           brief=sturm_tei_file(directory+'/'+filename,nlp)
+           brief=sturm_tei_file(directory+'/'+filename,nlp,with_position_tags=with_position_tags)
            training_data+=split_into_sentences(brief.build_tagged_text_line_list())
     for i in range(len(training_data)):
           for j in range(len(training_data[i])):
               for tag in _ner_tag_list:
-                  if tag in training_data[i][j][1]:
-                      if with_rs and training_data[i][j][1].startswith('re'):
-                          training_data[i][j][1]='rs'+tag
+                  cur_tag = training_data[i][j][1]
+                  if cur_tag.startswith('B-') or cur_tag.startswith('I-'):
+                      cur_start=cur_tag[:2]
+                      cur_tag=cur_tag[2:]
+                  else:
+                      cur_start=''
+                  if tag in cur_tag:
+                      if with_rs and cur_tag.startswith('re'):
+                          training_data[i][j][1]=cur_start +'rs'+tag
                       else:
-                          training_data[i][j][1]=tag
+                          training_data[i][j][1]=cur_start + tag
     with open(outfile,'w+') as g:
         json.dump(training_data,g)
 
-def build_ner_data_per_file(directory,outdirectory,fname=None):
+def build_ner_data_per_file(directory,outdirectory,fname=None, with_position_tags=False):
     #  before first use download the spacy model by: python -m spacy download de_core_news_sm
     nlp =spacy.load('de_core_news_sm')
 
@@ -70,13 +76,19 @@ def build_ner_data_per_file(directory,outdirectory,fname=None):
         filelist=os.listdir(directory)
     for filename in filelist:
         if 1==1:
-            brief=sturm_tei_file(join(directory,filename),nlp)
+            brief=sturm_tei_file(join(directory,filename),nlp,with_position_tags=with_position_tags)
             raw_ner_data=split_into_sentences(brief.build_tagged_text_line_list())
             for i in range(len(raw_ner_data)):
                 for j in range(len(raw_ner_data[i])):
                     for tag in _ner_tag_list:
-                        if tag in raw_ner_data[i][j][1]:
-                            raw_ner_data[i][j][1]=tag
+                        cur_tag = raw_ner_data[i][j][1]
+                        if cur_tag.startswith('B-') or cur_tag.startswith('I-'):
+                            cur_start=cur_tag[:2]
+                            cur_tag=cur_tag[2:]
+                        else:
+                            cur_start=''
+                        if tag in cur_tag:
+                            raw_ner_data[i][j][1]=cur_start+tag
             with open(join(outdirectory,filename+'.json'),'w+') as g:
                 json.dump(raw_ner_data,g)
 
@@ -103,10 +115,10 @@ def count_tags_in_list_file(listfile):
 
 if __name__ == '__main__':
     #build_ner_statistics('../data_sturm/briefe')
-    #build_ner_training_data('../data_sturm/briefe','../data_sturm/train_data.json')
-    #count_tags_in_json(['../data_sturm/train_data.json'])
+    #build_ner_training_data('../../uwe_johnson_data/data_sturm/briefe','../../uwe_johnson_data/data_sturm/train_data.json',with_position_tags=True)
+    #count_tags_in_json(['../../uwe_johnson_data/data_sturm/train_data.json'])
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
-    #build_ner_data_per_file('../data_sturm/briefe','../data_sturm/data_to_train')
+    #build_ner_data_per_file('../../uwe_johnson_data/data_sturm/briefe','../../uwe_johnson_data/data_sturm/data_to_train',with_position_tags=True)
     count_tags_in_list_file("sturm.lst")
     count_tags_in_list_file("train_sturm.lst")
     count_tags_in_list_file("val_sturm.lst")

@@ -4,13 +4,14 @@ import spacy
 
 class arendt_tei_file():
 
-    def __init__(self, filename,nlp=None):
+    def __init__(self, filename,nlp=None,with_position_tags=False):
         self._allowed_tags={'name':['person','place','country','organization','deity','language','ethnicity','ship','event','ficticiousPerson','biblicalFigure','mythologicalFigure'],'Name':['person','place','country','organization','deity','language','ethnicity','ship','event','ficticiousPerson','biblicalFigure','mythologicalFigure']}
         self._pagelist=[]
         self._soup=None
         self._note_list=[]
         self._tagged_note_list=[]
         self._note_statistics={}
+        self._with_position_tags=with_position_tags
         self._text,self._tagged_text,self._statistics,self._notes, self._tagged_notes=self._get_text_and_statistics(filename)
         self._tagged_text_line_list=[]
         self._tagged_note_line_list=[]
@@ -161,6 +162,7 @@ class arendt_tei_file():
 
     def build_tagged_text_line_list(self):
         cur_tag='O' #O is the sign for without tag
+        first_tag_element=False
         tagged_text_lines=self.get_tagged_text().split('\n')
         #Build Mapping Word to Tag
         for tagged_text_line in tagged_text_lines:
@@ -172,12 +174,21 @@ class arendt_tei_file():
                         cur_tag='O' #O is the sign for without tag
                     else:
                         cur_tag=text_part[1:-1]
+                        first_tag_element=True
                 elif text_part is not None and text_part!='':
+                    if self._with_position_tags and cur_tag!='O':
+                        if first_tag_element:
+                            modified_tag='B-'+cur_tag
+                            first_tag_element=False
+                        else:
+                            modified_tag='I-'+cur_tag
+                    else:
+                        modified_tag=cur_tag
                     #Sentence extraction doesn't work for capitalized words, that is why we use the following
                     if text_part.upper()==text_part:
-                        cur_line_list.append([text_part.lower(),cur_tag,1])
+                        cur_line_list.append([text_part.lower(),modified_tag,1])
                     else:
-                        cur_line_list.append([text_part,cur_tag,0])
+                        cur_line_list.append([text_part,modified_tag,0])
             self._tagged_text_line_list.append(cur_line_list)
         #Seperate sentences with the help of spacy
         for i in range(len(self._tagged_text_line_list)):
@@ -299,9 +310,10 @@ class arendt_tei_file():
             print(key,self._note_statistics[key])
 
 if __name__ == '__main__':
-    brief=arendt_tei_file('../data_hannah_arendt/III-001-existenzPhilosophie.xml')
-    brief.build_tagged_text_line_list()
-    brief.print_statistics()
+    brief=arendt_tei_file('../data_hannah_arendt/III-001-existenzPhilosophie.xml',with_position_tags=True)
+    #print(brief.get_tagged_text())
+    print(brief.build_tagged_text_line_list())
+    #brief.print_statistics()
     #text_list=brief.get_tagged_text_line_list()
     #for line in text_list:
     #    for word in line:
