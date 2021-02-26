@@ -113,6 +113,26 @@ def count_tags_in_list_file(listfile):
     #print(fnames)
     count_tags_in_json(fnames)
 
+def check_correctness(file):
+    count=0
+    textlist=[]
+    with open(file) as f:
+        textlist.extend(json.load(f))
+    for element in textlist:
+        for i in range(len(element)):
+            if (i==0 or element[i-1][1].replace('B-','I-')!=element[i][1]) and element[i][1].startswith('I-'):
+                count+=1
+                print(element)
+    print(count)
+
+def check_correctness_in_list_file(listfile):
+    fnames = []
+    with open(listfile, 'r') as f:
+        fnames.extend(f.read().splitlines())
+    #print(fnames)
+    for file in fnames:
+        check_correctness(file)
+
 if __name__ == '__main__':
     #build_ner_statistics('../data_sturm/briefe')
     #build_ner_training_data('../../uwe_johnson_data/data_sturm/briefe','../../uwe_johnson_data/data_sturm/train_data.json',with_position_tags=True)
@@ -120,5 +140,6 @@ if __name__ == '__main__':
     #split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../../uwe_johnson_data/data_sturm/briefe','../../uwe_johnson_data/data_sturm/data_to_train',with_position_tags=True)
     count_tags_in_list_file("sturm.lst")
-    count_tags_in_list_file("train_sturm.lst")
-    count_tags_in_list_file("val_sturm.lst")
+    #count_tags_in_list_file("train_sturm.lst")
+    #count_tags_in_list_file("val_sturm.lst")
+    #check_correctness_in_list_file("sturm.lst")

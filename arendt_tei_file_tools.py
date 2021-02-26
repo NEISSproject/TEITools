@@ -132,14 +132,35 @@ def count_tags_in_list_file(listfile):
     # print(fnames)
     count_tags_in_json(fnames)
 
+def check_correctness(file):
+    count=0
+    textlist=[]
+    with open(file) as f:
+        textlist.extend(json.load(f))
+    for element in textlist:
+        for i in range(len(element)):
+            if (i==0 or element[i-1][1].replace('B-','I-')!=element[i][1]) and element[i][1].startswith('I-'):
+                count+=1
+                print(element)
+    print(count)
+
+def check_correctness_in_list_file(listfile):
+    fnames = []
+    with open(listfile, 'r') as f:
+        fnames.extend(f.read().splitlines())
+    #print(fnames)
+    for file in fnames:
+        check_correctness(file)
+
 
 if __name__ == '__main__':
-    #build_ner_statistics('../../uwe_johnson_data/data_hannah_arendt/')
+    build_ner_statistics('../../uwe_johnson_data/data_hannah_arendt/')
     #build_ner_training_data('../../uwe_johnson_data/data_hannah_arendt/','../../uwe_johnson_data/data_hannah_arendt/train_data.json',with_position_tags=True)
     #count_tags_in_json(['../../uwe_johnson_data/data_hannah_arendt/train_data.json'])
     # split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../../uwe_johnson_data/data_hannah_arendt/','../../uwe_johnson_data/data_hannah_arendt/data_to_train',with_position_tags=True)
 
-    count_tags_in_list_file("arendt.lst")
-    count_tags_in_list_file("train_arendt.lst")
-    count_tags_in_list_file("val_arendt.lst")
+    #count_tags_in_list_file("arendt.lst")
+    #count_tags_in_list_file("train_arendt.lst")
+    #count_tags_in_list_file("val_arendt.lst")
+    #check_correctness_in_list_file("arendt.lst")
