@@ -127,6 +127,7 @@ def count_tags_in_json(filelist):
 
 def count_tags_in_list_file(listfile):
     fnames = []
+    print(listfile)
     with open(listfile, 'r') as f:
         fnames.extend(f.read().splitlines())
     # print(fnames)
@@ -152,15 +153,44 @@ def check_correctness_in_list_file(listfile):
     for file in fnames:
         check_correctness(file)
 
+def split_train_data_in_val_dev_and_train_set(filename,trainfilename,valfilename,devfilename,valrate=0.1,devrate=0.1):
+    with open(filename) as f:
+        training_data=json.load(f)
+    val_list=[]
+    dev_list=[]
+    train_list=[]
+    random.shuffle(training_data)
+    for i in range(len(training_data)):
+        if i<valrate*len(training_data):
+            val_list.append(training_data[i])
+        elif i<(valrate+devrate)*len(training_data):
+            dev_list.append(training_data[i])
+        else:
+            train_list.append(training_data[i])
+    with open(valfilename,'w+') as g:
+        json.dump(val_list,g)
+    with open(devfilename,'w+') as g2:
+        json.dump(dev_list,g2)
+    with open(trainfilename,'w+') as h:
+        json.dump(train_list,h)
+
 
 if __name__ == '__main__':
-    build_ner_statistics('../../uwe_johnson_data/data_hannah_arendt/')
+    #build_ner_statistics('../../uwe_johnson_data/data_hannah_arendt/')
     #build_ner_training_data('../../uwe_johnson_data/data_hannah_arendt/','../../uwe_johnson_data/data_hannah_arendt/train_data.json',with_position_tags=True)
     #count_tags_in_json(['../../uwe_johnson_data/data_hannah_arendt/train_data.json'])
     # split_train_data_in_val_and_train_set('../data_040520/train_data.json','../data_040520/data_uja_ner_train2.json','../data_040520/data_uja_ner_val2.json',0.2)
     #build_ner_data_per_file('../../uwe_johnson_data/data_hannah_arendt/','../../uwe_johnson_data/data_hannah_arendt/data_to_train',with_position_tags=True)
 
-    #count_tags_in_list_file("arendt.lst")
-    #count_tags_in_list_file("train_arendt.lst")
-    #count_tags_in_list_file("val_arendt.lst")
-    #check_correctness_in_list_file("arendt.lst")
+    #count_tags_in_list_file("lists/sturm_full.lst")
+    count_tags_in_list_file("lists/train_sturm.lst")
+    count_tags_in_list_file("lists/test_sturm.lst")
+    count_tags_in_list_file("lists/dev_sturm.lst")
+    #count_tags_in_list_file("lists/train2_arendt.lst")
+    #check_correctness_in_list_file("lists/test_arendt.lst")
+    #split_train_data_in_val_dev_and_train_set('data/arendt.json','data/train_arendt.json','data/val_arendt.json','data/dev_arendt.json')
+    #count_tags_in_json(['data/arendt.json'])
+    #count_tags_in_json(['data/train_arendt.json'])
+    #count_tags_in_json(['data/val_arendt.json'])
+    #count_tags_in_json(['data/dev_arendt.json'])
+

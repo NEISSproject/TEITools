@@ -8,7 +8,7 @@ def build_train_file_from_lst_file(lst_file,outfilename):
     print(fnames)
     textlist=[]
     for filename in fnames:
-        with open('../../tf_neiss_test/'+filename) as f:
+        with open(filename) as f:
             textlist.extend(json.load(f))
     for i in range(len(textlist)):
         textlist[i]=[el[0:2] for el in textlist[i]]
@@ -51,6 +51,20 @@ def check_correctness_in_list_file(listfile):
     #print(fnames)
     check_correctness(fnames)
 
+def build_whole_file_conll(filelist,writefilename):
+    textlist=[]
+    conlllist=[]
+    for filename in filelist:
+        with open(filename) as f:
+            textlist.extend(json.load(f))
+    for i in range(len(textlist)):
+        for j in range(len(textlist[i])):
+            textlist[i][j]=textlist[i][j][0:2]
+            conlllist.append(textlist[i][j][0]+' '+textlist[i][j][1]+'\n')
+        conlllist.append('\n')
+    with open(writefilename+'.conll', 'w+') as h:
+        h.writelines(conlllist)
+
 
 
 
@@ -59,6 +73,8 @@ def check_correctness_in_list_file(listfile):
 
 if __name__ == '__main__':
     #build_train_file_from_lst_file('../../tf_neiss_test/lists/train_arendt.lst','train_arendt.json')
-    build_whole_file_conll_json(['train_arendt.json','val_arendt.json'],'arendt')
+    #build_whole_file_conll_json(['train_arendt.json','val_arendt.json'],'arendt')
+    #build_train_file_from_lst_file('lists/test_sturm.lst','data/test_sturm.json')
+    build_whole_file_conll(['data/train_sturm.json'],'data/train_sturm')
     #check_correctness('arendt.json')
     #check_correctness_in_list_file()
